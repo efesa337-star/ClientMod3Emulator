@@ -911,53 +911,30 @@ bool __fastcall Hooked_ProcessMessages(INetChannel* pThis, void* edx, bf_read& b
 			}
 
 			if (cmd == svc_GetCvarValue)
-			{
-				SVC_GetCvarValue* msgmsg = (SVC_GetCvarValue*)netmsg;
+{
+	SVC_GetCvarValue* msgmsg = (SVC_GetCvarValue*)netmsg;
 
-				RespondCvarValue("cm_steamid", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_steamid_random", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_steamid_enabled", "", eQueryCvarValueStatus_CvarNotFound); 
-				RespondCvarValue("cm_version", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_enabled", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_forcemap", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_drawspray", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_fakeconnect", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("cm_log", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("se_lkblox", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("se_autobunnyhopping", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("se_disablebunnyhopping", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_viewmodel_right", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_viewmodel_fov", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_viewmodel_up", "0", eQueryCvarValueStatus_ValueIntact);
+	// Обход детектора cM_version: принудительно шлем статус "не найдено"
+	if (V_stricmp(msgmsg->m_szCvarName, "cM_version") == 0)
+	{
+		ReturnCvarValue(pThis, eQueryCvarValueStatus_CvarNotFound, msgmsg->m_iCookie, msgmsg->m_szCvarName, "");
+		continue;
+	}
 
-				RespondCvarValue("se_respawn_on_death", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_blood_scale", "1", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_bob_lower_amt", "21", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("mat_potato_mode", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("mat_async_tex_maxtime_ms", "0.5", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("mat_colcorrection_disableentities", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("se_doubleduck", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("se_nowinpanel", "1", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("se_newsmoke", "14", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("e_showserverinfo", "0", eQueryCvarValueStatus_ValueIntact);
+	// Ответ на легитимный запрос версии: шлем актуальную хардкод-версию
+	if (V_stricmp(msgmsg->m_szCvarName, "cm_version") == 0)
+	{
+		ReturnCvarValue(pThis, eQueryCvarValueStatus_ValueIntact, msgmsg->m_iCookie, msgmsg->m_szCvarName, "3.0.1.1943");
+		continue;
+	}
 
-				RespondCvarValue("async_toggle_priority", "", eQueryCvarValueStatus_CvarNotFound);
-				RespondCvarValue("_client_version", (char*)g_pCVar->FindVar("cm_version")->GetString(), eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("~clientmod", "2.0", eQueryCvarValueStatus_ValueIntact);
-
-				RespondCvarValue("net_blockmsg", "none", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("net_compresspackets_minsize", "128", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("windows_speaker_config", "4", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("net_compresspackets", "1", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("pyro_vignette", "2", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("cl_minmodels", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("cl_min_ct", "1", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("cl_min_t", "1", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("cl_downloadfilter", "all", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("voice_inputfromfile", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("voice_loopback", "0", eQueryCvarValueStatus_ValueIntact);
-				RespondCvarValue("sv_cheats", "0", eQueryCvarValueStatus_ValueIntact);
-			}
+	// Для всех остальных запрашиваемых плагином cM_ переменных тоже возвращаем NotFound во избежание детектов
+	if (V_strnicmp(msgmsg->m_szCvarName, "cM_", 3) == 0)
+	{
+		ReturnCvarValue(pThis, eQueryCvarValueStatus_CvarNotFound, msgmsg->m_iCookie, msgmsg->m_szCvarName, "");
+		continue;
+	}
+}
 
 			if (srcds)
 			{
@@ -1524,8 +1501,8 @@ DWORD WINAPI HackThread(HMODULE hModule)
 		printfdbg("g_pCVar %x\n", g_pCVar);
 
 		CallVFunction<IVEngineClient* (__thiscall*)(void*, char*)>(g_pEngineClient, 97)(g_pEngineClient, //g_pEngineClient->ExecuteClientCmd
-			"setinfo cm_steamid 1337; setinfo cm_steamid_random 1; setinfo cm_steamid_enabled 1; setinfo cm_enabled 1; setinfo cm_version \"3.0.0.9135\"; setinfo cm_drawspray 1; setinfo cm_forcemap \"\"; setinfo cm_fakeconnect 0; setinfo cm_log 0");
-
+	"setinfo cm_steamid 1337; setinfo cm_steamid_random 1; setinfo cm_steamid_enabled 1; setinfo cm_enabled 1; setinfo cm_version \"3.0.1.1943\"; setinfo cm_drawspray 1; setinfo cm_forcemap \"\"; setinfo cm_fakeconnect 0; setinfo cm_log 0");
+			
 		//FCVAR_PROTECTED 
 		g_pCVar->FindVar("cm_steamid")->m_nFlags = 537001984;
 		g_pCVar->FindVar("cm_steamid_random")->m_nFlags = 537001984;
